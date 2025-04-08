@@ -183,16 +183,16 @@ def add_target(request, slug):
                         return http.HttpResponseRedirect(reverse('add_target', kwargs={'slug': slug}))
                     txt_content = txt_file.read().decode('UTF-8')
                     io_string = io.StringIO(txt_content)
-                    for row in io_string:
-                        target = row.rstrip("\n").rstrip("\r")
-                        domain_query = Domain.objects.filter(name=target)
+                    for target in io_string:
+                        target_domain = target.rstrip("\n").rstrip("\r")
+                        domain = None  # Move the domain variable declaration here
+                        domain_query = Domain.objects.filter(name=target_domain)
                         if not domain_query.exists():
-                            is_ip = bool(validators.ipv4(target)) or bool(validators.ipv6(target))
-                            if not validators.domain(target) and not is_ip:  # Change 'domain' to 'target_domain'
-                                messages.add_message(request, messages.ERROR, f'{target} is not a valid domain name or IP. Skipping.')
+                            if not validators.domain(target_domain):  # Change 'domain' to 'target_domain'
+                                messages.add_message(request, messages.ERROR, f'Domain {target_domain} is not a valid domain name. Skipping.')
                                 continue
                             Domain.objects.create(
-                                name=target,
+                                name=target_domain,
                                 project=project,
                                 insert_date=timezone.now())
                             added_target_count += 1
@@ -208,18 +208,17 @@ def add_target(request, slug):
                         return http.HttpResponseRedirect(reverse('add_target', kwargs={'slug': slug}))
                     csv_content = csv_file.read().decode('UTF-8')
                     io_string = io.StringIO(csv_content)
-                    for row in csv.reader(io_string, delimiter=','):
-                        target = row[0]
-                        description = None if len(row) <= 1 else row[1]
-                        organization = None if len(row) <= 2 else row[2]
-                        domain_query = Domain.objects.filter(name=target)
+                    for column in csv.reader(io_string, delimiter=','):
+                        domain = column[0]
+                        description = None if len(column) <= 1 else column[1]
+                        organization = None if len(column) <= 2 else column[2]
+                        domain_query = Domain.objects.filter(name=domain)
                         if not domain_query.exists():
-                            is_ip = bool(validators.ipv4(target)) or bool(validators.ipv6(target))
-                            if not validators.domain(target) and not is_ip:
-                                messages.add_message(request, messages.ERROR, f'{target} is not a valid domain name or IP. Skipping.')
+                            if not validators.domain(domain):
+                                messages.add_message(request, messages.ERROR, f'Domain {domain} is not a valid domain name. Skipping.')
                                 continue
                             domain_obj = Domain.objects.create(
-                                name=target,
+                                name=domain,
                                 project=project,
                                 description=description,
                                 insert_date=timezone.now())
